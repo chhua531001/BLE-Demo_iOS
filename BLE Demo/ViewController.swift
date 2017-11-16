@@ -11,8 +11,11 @@ import CoreBluetooth
 class ViewController: UIViewController {
 @IBOutlet var tableView : UITableView!
 @IBOutlet var lblStatus : UILabel!
+    
 var centralManager: CBCentralManager?
 var serviceUUIDs: [CBUUID]?
+var mWriteCharacteristic: CBCharacteristic!
+var mReadCharacteristic: CBCharacteristic!
 var peripherals = Array<CBPeripheral>()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -142,8 +145,31 @@ extension ViewController : CBPeripheralDelegate
             
             for newChar: CBCharacteristic in service.characteristics!{
                 
-                print("new Char--> \(newChar)")
+//                peripheral.setNotifyValue(true, for: newChar)
+                
+                let characteristicUUID = newChar.uuid.uuidString
+                print("new Characteristic UUID--> \(characteristicUUID)")
+                if(characteristicUUID == "468E6032-AA75-2215-88CA-F9CFBB2575D5") {
+                    mWriteCharacteristic = newChar
+                } else if(characteristicUUID == "468E6033-AA75-2215-88CA-F9CFBB2575D5") {
+                    mReadCharacteristic = newChar
+                    peripheral.setNotifyValue(true, for: newChar)
+                }
             }
+
+            print("Write Characteristic UUID--> \(mWriteCharacteristic.uuid.uuidString)")
+            print("Read Characteristic UUID--> \(mReadCharacteristic.uuid.uuidString)")
+            
+//            var parameter = NSInteger(1)
+//            let data = NSData(bytes: &parameter, length: 1)
+            
+//            let data = "0400".data(using: .utf8)
+            let data = "0004".hexadecimal();
+            peripheral.writeValue(data!, for: mWriteCharacteristic!, type: CBCharacteristicWriteType.withResponse)
+//            peripheral.writeValue(data as Data, forCharacteristic: characteric, type: CBCharacteristicWriteType.WithResponse)
+            
+            
+            
         }
         else {
             
@@ -155,6 +181,15 @@ extension ViewController : CBPeripheralDelegate
             
             self.present(alert, animated: true, completion: nil)
         }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+        print("Notification changed:\(characteristic)")
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?)
+    {
+        print("characteristic changed:\(characteristic)")
     }
     
 }
@@ -201,5 +236,22 @@ extension String {
     //user define String Equal
     func isEqualToString(find: String) -> Bool {
         return String(format: self) == find
+    }
+    
+    func hexadecimal() -> Data? {
+        var data = Data(capacity: self.count / 2)
+        
+        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
+        regex.enumerateMatches(in: self, range: NSMakeRange(0, utf16.count)) { match, flags, stop in
+            let byteString = (self as NSString).substring(with: match!.range)
+            var num = UInt8(byteString, radix: 16)!
+            data.append(&num, count: 1)
+        }
+        
+        guard data.count > 0 else { return nil }
+        
+        print("data count = \(data.count)")
+        
+        return data
     }
 }
