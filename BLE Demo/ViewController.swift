@@ -12,6 +12,7 @@ class ViewController: UIViewController {
 @IBOutlet var tableView : UITableView!
 @IBOutlet var lblStatus : UILabel!
 var centralManager: CBCentralManager?
+var serviceUUIDs: [CBUUID]?
 var peripherals = Array<CBPeripheral>()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,12 +50,34 @@ extension ViewController : CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        
+        let manufactureData = advertisementData["kCBAdvDataManufacturerData"].debugDescription
+        //讀出來的正確資料為 Optional(<5900468e 006e6873 2e686363 092e7477 2f>)
+        //Using String extension
+        //為了取出468e
+        let uuid = manufactureData[14..<18]
+        
+//        debugPrint("Scan central --> \(central)")
+//        debugPrint("Scan Result --> \(peripheral)")
+//        debugPrint("Scan Service --> \(service)")
+        debugPrint("Scan Result RSSI --> \(RSSI)")
+        debugPrint("advertisementData --> \(manufactureData)")
+        debugPrint("advertisementData count --> \(manufactureData.count)")
+        debugPrint("uuid --> \(uuid)")
+        
+//        for service in peripheral.services! {
+//
+//            print("Discovered service: \(service.uuid)")
+//        }
+        
         if peripherals.contains(peripheral){
            tableView.reloadData()
         }
         else {
-            peripherals.append(peripheral)
-            tableView.reloadData()
+            if(uuid.isEqualToString(find: "468e")) {
+                peripherals.append(peripheral)
+                tableView.reloadData()
+            }
         }
         
     }
@@ -69,6 +92,14 @@ extension ViewController : CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        
+                for service in peripheral.services! {
+        
+                    print("Discovered service: \(service.uuid)")
+                }
+
+        
+        
         let alert = UIAlertController(title: "Error", message: "There was error connecting to the device. Try again later", preferredStyle: UIAlertControllerStyle.alert)
         
         alert.addAction(UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler: { (UIAlertAction) in
@@ -77,6 +108,8 @@ extension ViewController : CBCentralManagerDelegate {
         
         self.present(alert, animated: true, completion: nil)
     }
+    
+    
 }
 
 // Extenstion to manage the Peripheral Services
@@ -87,6 +120,7 @@ extension ViewController : CBPeripheralDelegate
         if (error == nil) {
             for service in peripheral.services! {
                 
+                print("Discovered service: \(service.uuid)")
                 peripheral.discoverCharacteristics(nil, for: service)
             }
         }
@@ -105,8 +139,14 @@ extension ViewController : CBPeripheralDelegate
         //
         if (error == nil) {
             print(service.characteristics ?? "")
+            
+            for newChar: CBCharacteristic in service.characteristics!{
+                
+                print("new Char--> \(newChar)")
+            }
         }
         else {
+            
             let alert = UIAlertController(title: "Error", message: "There was error discovering characteristics", preferredStyle: UIAlertControllerStyle.alert)
             
             alert.addAction(UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler: { (UIAlertAction) in
@@ -142,5 +182,24 @@ extension ViewController : UITableViewDataSource , UITableViewDelegate{
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         centralManager?.connect(peripherals[indexPath.row], options: nil)
+    }
+}
+
+//Swift 4 : If you want to use subscripts on Strings like "palindrome"[1..<3] and "palindrome"[1...3], use these extensions.
+extension String {
+    subscript (bounds: CountableClosedRange<Int>) -> String {
+        let start = index(startIndex, offsetBy: bounds.lowerBound)
+        let end = index(startIndex, offsetBy: bounds.upperBound)
+        return String(self[start...end])
+    }
+    
+    subscript (bounds: CountableRange<Int>) -> String {
+        let start = index(startIndex, offsetBy: bounds.lowerBound)
+        let end = index(startIndex, offsetBy: bounds.upperBound)
+        return String(self[start..<end])
+    }
+    //user define String Equal
+    func isEqualToString(find: String) -> Bool {
+        return String(format: self) == find
     }
 }
