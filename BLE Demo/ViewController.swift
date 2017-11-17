@@ -31,6 +31,13 @@ var peripherals = Array<CBPeripheral>()
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "showItem" {
+            print("showItem")
+        }
+    }
+    
 }
 
 // Extenstion to manage the Core Bluetooth Methods
@@ -111,6 +118,8 @@ extension ViewController : CBCentralManagerDelegate {
         
         self.present(alert, animated: true, completion: nil)
     }
+    
+
     
     
 }
@@ -196,15 +205,16 @@ extension ViewController : CBPeripheralDelegate
 
 
 // Extenstion to manage the UITableView
+
 extension ViewController : UITableViewDataSource , UITableViewDelegate{
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1;
-    }
+//    func numberOfSections(in tableView: UITableView) -> Int {
+//        return 1;
+//    }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return peripherals.count
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell:UITableViewCell = self.tableView.dequeueReusableCell(withIdentifier: "cell")! as UITableViewCell        
+        let cell:UITableViewCell = self.tableView.dequeueReusableCell(withIdentifier: "cell")! as UITableViewCell
         let peripheral = peripherals[indexPath.row]
         if  peripheral.name == "" || peripheral.name == nil {
            cell.textLabel?.text = String(describing: peripheral.identifier)
@@ -212,7 +222,7 @@ extension ViewController : UITableViewDataSource , UITableViewDelegate{
         else {
           cell.textLabel?.text = peripheral.name
         }
-        
+
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
